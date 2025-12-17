@@ -122,36 +122,21 @@ JSON
 RESP=$(curl -sS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "$API_REPO/releases" -d "$CREATE_JSON")
 
 # If release already exists, fallback to using the existing one
-RELEASE_ID=$(python3 - <<'PY' 2>/dev/null || true
-import json,sys
-data=json.load(sys.stdin)
-print(data.get('id',''))
-PY
-<<<"$RESP")
+RELEASE_ID=$(python3 -c 'import sys,json; print(json.load(sys.stdin).get("id",""))' <<< "$RESP" 2>/dev/null || echo "")
 
-if [[ -z "$RELEASE_ID" || "$RELEASE_ID" == "" ]]; then
+if [[ -z "$RELEASE_ID" ]]; then
   # Likely a 422 (release already exists). Fetch by tag.
   echo "Release creation failed, attempting to fetch existing release by tag..."
   RESP=$(curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$API_REPO/releases/tags/$TAG_NAME")
-  RELEASE_ID=$(python3 - <<'PY' 2>/dev/null || true
-import json,sys
-data=json.load(sys.stdin)
-print(data.get('id',''))
-PY
-<<<"$RESP")
+  RELEASE_ID=$(python3 -c 'import sys,json; print(json.load(sys.stdin).get("id",""))' <<< "$RESP" 2>/dev/null || echo "")
 fi
 
-if [[ -z "$RELEASE_ID" || "$RELEASE_ID" == "" ]]; then
+if [[ -z "$RELEASE_ID" ]]; then
   echo "Error: Could not get a release ID. Response was:\n$RESP" >&2
   exit 1
 fi
 
-HTML_URL=$(python3 - <<'PY' 2>/dev/null || true
-import json,sys
-data=json.load(sys.stdin)
-print(data.get('html_url',''))
-PY
-<<<"$RESP")
+HTML_URL=$(python3 -c 'import sys,json; print(json.load(sys.stdin).get("html_url",""))' <<< "$RESP" 2>/dev/null || echo "")
 
 echo "==> Uploading assets to release $RELEASE_ID"
 UPLOAD_BASE="https://uploads.github.com/repos/$REPO_SLUG/releases/$RELEASE_ID/assets?name="
