@@ -17,6 +17,28 @@ class BackgroundAudioWebView @JvmOverloads constructor(
 ) : WebView(context, attrs, defStyleAttr) {
 
     private var keepPlayingInBackground = false
+    
+    init {
+        // Enable focus for keyboard input
+        isFocusable = true
+        isFocusableInTouchMode = true
+        
+        // Request focus when touched to ensure keyboard appears
+        setOnTouchListener { v, _ ->
+            if (!v.hasFocus()) {
+                v.requestFocus()
+            }
+            false // Return false to allow the touch event to propagate
+        }
+    }
+    
+    /**
+     * Tell the system this view can accept text input.
+     * This is crucial for the soft keyboard to appear when input fields are focused.
+     */
+    override fun onCheckIsTextEditor(): Boolean {
+        return true
+    }
 
     /**
      * Enable or disable background audio playback.
